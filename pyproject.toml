@@ -1,0 +1,57 @@
+[tool.poetry]
+name = "enforence"
+version = "0.1.0"
+description = "AI-powered Technical Specification Generator (КМУ №205)"
+authors = ["Anton Nesterenko <a.nesterenko@setuniversity.edu.ua>"]
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.104.0"
+uvicorn = {extras = ["standard"], version = "^0.24.0"}
+pydantic = {extras = ["email"], version = "^2.5.0"}
+pydantic-settings = "^2.1.0"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.23"}
+aiosqlite = "^0.19.0"
+crewai = "^0.28.0"
+langchain = "^0.1.0"
+langchain-anthropic = "^0.1.0"
+qdrant-client = "^1.7.0"
+sentence-transformers = "^2.2.2"
+python-docx = "^1.1.0"
+python-multipart = "^0.0.6"
+httpx = "^0.25.0"
+tenacity = "^8.2.3"
+structlog = "^24.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+pytest-asyncio = "^0.21.1"
+pytest-cov = "^4.1.0"
+black = "^23.11.0"
+ruff = "^0.1.6"
+mypy = "^1.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

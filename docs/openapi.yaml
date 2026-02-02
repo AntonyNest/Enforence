@@ -1,0 +1,371 @@
+openapi: 3.0.3
+info:
+  title: ENFORENCE API
+  description: |
+    AI-платформа для автоматизованої генерації технічних завдань (ТЗ)
+    згідно КМУ Постанова №205.
+
+    ## Основні можливості
+    - Створення проєктів ТЗ
+    - Автоматична генерація 10 секцій КМУ №205
+    - Редагування секцій (Human-in-the-loop)
+    - Експорт у DOCX формат
+
+    ## Автентифікація
+    MVP версія без автентифікації. Production буде використовувати JWT.
+  version: 0.1.0
+  contact:
+    name: Anton Nesterenko
+    email: a.nesterenko@setuniversity.edu.ua
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://enforence-api.onrender.com
+    description: Production
+
+paths:
+  /health:
+    get:
+      summary: Health Check
+      operationId: healthCheck
+      tags: [Health]
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  version:
+                    type: string
+                    example: 0.1.0
+
+  /api/v1/projects:
+    post:
+      summary: Create Project
+      operationId: createProject
+      tags: [Projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '201':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+    get:
+      summary: List Projects
+      operationId: listProjects
+      tags: [Projects]
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectListResponse'
+
+  /api/v1/projects/{project_id}:
+    get:
+      summary: Get Project
+      operationId: getProject
+      tags: [Projects]
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '404':
+          description: Project not found
+
+  /api/v1/projects/{project_id}/generate:
+    post:
+      summary: Start Generation
+      operationId: startGeneration
+      tags: [Generation]
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerationRequest'
+      responses:
+        '202':
+          description: Generation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationStartResponse'
+
+  /api/v1/projects/{project_id}/status:
+    get:
+      summary: Get Generation Status
+      operationId: getGenerationStatus
+      tags: [Generation]
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Generation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationStatusResponse'
+
+  /api/v1/projects/{project_id}/document:
+    get:
+      summary: Get Document
+      operationId: getDocument
+      tags: [Documents]
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Full document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '404':
+          description: Document not found
+
+  /api/v1/projects/{project_id}/sections/{section_id}:
+    patch:
+      summary: Update Section
+      operationId: updateSection
+      tags: [Documents]
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: section_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SectionUpdate'
+      responses:
+        '200':
+          description: Section updated
+
+  /api/v1/projects/{project_id}/export/docx:
+    get:
+      summary: Export DOCX
+      operationId: exportDocx
+      tags: [Documents]
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: DOCX file
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+
+  /api/v1/templates:
+    get:
+      summary: List Templates
+      operationId: listTemplates
+      tags: [Templates]
+      responses:
+        '200':
+          description: Available templates
+
+components:
+  schemas:
+    ProjectCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 255
+          example: "Портал е-послуг для громадян"
+        description:
+          type: string
+          example: "Веб-портал для надання електронних послуг"
+        template_type:
+          type: string
+          default: kmu_205
+
+    ProjectResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        template_type:
+          type: string
+        status:
+          type: string
+          enum: [draft, generating, completed, failed]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProjectListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectResponse'
+        total:
+          type: integer
+
+    GenerationRequest:
+      type: object
+      properties:
+        requirements:
+          type: object
+          additionalProperties:
+            type: string
+        sections:
+          type: array
+          items:
+            type: string
+
+    GenerationStartResponse:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+          example: processing
+        estimated_time_seconds:
+          type: integer
+          example: 120
+
+    GenerationStatusResponse:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        progress:
+          type: number
+          minimum: 0
+          maximum: 1
+        current_step:
+          type: string
+        elapsed_seconds:
+          type: number
+        error_message:
+          type: string
+
+    DocumentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionContent'
+        compliance_score:
+          type: number
+        metadata:
+          type: object
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    SectionContent:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "1"
+        title:
+          type: string
+          example: "Загальні відомості про засіб інформатизації"
+        content:
+          type: string
+        subsections:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+              content:
+                type: string
+
+    SectionUpdate:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
