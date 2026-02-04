@@ -140,5 +140,3 @@ poetry run pytest tests/test_api/ -v
 - **Марія Доненко** — Frontend (React/TypeScript)
 
 ## Ліцензія
-
-Приватний проєкт. Всі права захищено.
